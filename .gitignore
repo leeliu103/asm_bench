@@ -1,4 +1,5 @@
 build/
 __pycache__/
 *.py[cod]
-
+tasks/*/candidate.s
+runs/
