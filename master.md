@@ -8,7 +8,7 @@ Evaluate whether subagents can generate correct RDNA assembly kernels for one or
 
 The final output is a benchmark report with per-task results and overall `pass@1` / `pass@k` success rates.
 
-This workflow uses iterative `pass@k`: the same task subagent may receive official failure feedback and submit revised candidates.
+This workflow uses iterative `pass@k`: each task has one persistent subagent that may receive official failure feedback and submit revised candidates.
 
 ## Read First
 
@@ -79,11 +79,11 @@ Do not accept a subagent success claim without running the official harness your
 
 ## Per-Task Loop
 
-For each assigned task, run up to `k` attempts.
+For each assigned task, run up to `k` attempts using one persistent subagent.
 
 For each task:
 
-1. Create an `xhigh` reasoning subagent for that task.
+1. Create one `xhigh` reasoning subagent for that task.
 2. Instruct the subagent to follow `subagent.md`.
 3. Tell the subagent the task name and candidate path:
 
@@ -102,9 +102,13 @@ candidate: tasks/<task_name>/candidate.s
 
 Each task has independent attempt counting.
 
+Do not close, replace, or recreate the subagent for a task during the run.
+
 ## Multiple Tasks
 
-You may run task subagents one at a time or in parallel.
+At the start of the run, create one subagent for each assigned task, then wait for subagent responses.
+
+Do not create extra subagents for retries, debugging, verification, or alternative solutions.
 
 Keep results separated by task.
 
@@ -114,7 +118,9 @@ Do not mix attempts from different tasks.
 
 Only the master decides whether an attempt passes.
 
-While waiting for a subagent submission for a task, do not inspect that task's candidate files, run commands for that task, edit files for that task, or attempt your own solution for that task.
+While waiting for subagent responses, do not inspect candidate files, run task commands, edit files, attempt your own solution, close subagents, or create additional subagents.
+
+The master should only act when a task subagent submits `candidate.s` or asks a blocking question.
 
 Do not edit candidate `.s` files yourself during the benchmark run.
 
