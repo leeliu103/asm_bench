@@ -83,7 +83,7 @@ For each assigned task, run up to `k` attempts.
 
 For each task:
 
-1. Create a subagent for that task.
+1. Create an `xhigh` reasoning subagent for that task.
 2. Instruct the subagent to follow `subagent.md`.
 3. Tell the subagent the task name and candidate path:
 
