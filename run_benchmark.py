@@ -127,17 +127,11 @@ def main():
         "--tasks",
         help="Comma-separated task names. If omitted, all task folders are used.",
     )
-    parser.add_argument(
-        "-k",
-        "--k",
-        type=int,
-        default=3,
-        help="Maximum official attempts per task.",
-    )
+    parser.add_argument("--k", type=int, required=True, help="Maximum official attempts per task.")
     parser.add_argument(
         "--agent",
         choices=("codex", "claude"),
-        default="codex",
+        required=True,
         help="Agent command to launch.",
     )
     args = parser.parse_args()
