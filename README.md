@@ -13,8 +13,8 @@ and revise its solution. Local harness runs are development checks and do not
 count as official attempts.
 
 `k` is the maximum number of official submissions allowed for each task. An
-official attempt happens only when the subagent submits `candidate.s` and the
-master evaluates an immutable attempt snapshot with the official harness. A task
+official attempt happens only when the subagent submits `candidate.s` for master
+evaluation (the master checks an immutable snapshot of that submission). A task
 passes if any official attempt from 1 through `k` passes.
 
 This measures whether an agent can complete a realistic assembly kernel
@@ -41,6 +41,17 @@ Interpret `asm_bench` results as:
 
 ```text
 success within k official submissions, with local debugging allowed
+```
+
+## Repository Layout
+
+```text
+run_benchmark.py       prepares a run and launches the selected master agent
+master.md              master-agent benchmark protocol
+subagent.md            worker-agent task instructions
+output.md              required output layout and report format
+harness.py             official compile/load/run/check harness
+bench_runtime.cpp      HIP module loading and launch helper
 ```
 
 ## Run
