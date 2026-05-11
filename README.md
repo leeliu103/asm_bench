@@ -35,12 +35,9 @@ Use Claude:
 Each run creates:
 
 ```text
-runs/<timestamp>/prompt.md
 runs/<timestamp>/report.md
 runs/<timestamp>/<task_name>/attempt_N.s
 ```
-
-`prompt.md` is the prompt passed to the selected agent.
 
 `report.md` is the final benchmark report.
 

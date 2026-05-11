@@ -79,7 +79,7 @@ def clean_generated_state(tasks):
         raise SystemExit(f"failed to remove stale build directory {BUILD_DIR}: {exc}") from exc
 
 
-def write_prompt(run_dir, tasks, k, agent):
+def build_prompt(run_dir, tasks, k, agent):
     task_list = ", ".join(tasks)
 
     prompt = f"""Read master.md and run the RDNA assembly generation benchmark.
@@ -100,12 +100,7 @@ the source of truth for evaluation.
 
 Write benchmark outputs under the configured run_dir as described in output.md.
 """
-    prompt_path = run_dir / "prompt.md"
-    try:
-        prompt_path.write_text(prompt)
-    except OSError as exc:
-        raise SystemExit(f"failed to write prompt {prompt_path}: {exc}") from exc
-    return prompt_path, prompt
+    return prompt
 
 
 def agent_command(agent, prompt):
@@ -158,7 +153,7 @@ def main():
 
     run_dir = make_run_dir()
     clean_generated_state(tasks)
-    prompt_path, prompt = write_prompt(run_dir, tasks, args.k, args.agent)
+    prompt = build_prompt(run_dir, tasks, args.k, args.agent)
     cmd = agent_command(args.agent, prompt)
 
     print("Benchmark run prepared:", flush=True)
@@ -166,9 +161,6 @@ def main():
     print(f"  k: {args.k}", flush=True)
     print(f"  agent: {args.agent}", flush=True)
     print(f"  run_dir: {run_dir}", flush=True)
-    print(flush=True)
-    print("Prompt:", flush=True)
-    print(f"  {prompt_path}", flush=True)
     print(flush=True)
     print(f"Launching {args.agent}...", flush=True)
     return run_agent(cmd)
