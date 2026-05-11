@@ -2,6 +2,17 @@
 
 `asm_bench` runs agent benchmarks for RDNA assembly generation tasks.
 
+## Why This Repo Exists
+
+State-of-the-art coding agents such as Codex and Claude Code are evolving
+quickly. `asm_bench` provides a concrete benchmark for measuring their ability
+to write correct RDNA assembly kernels directly. For now, the benchmark focuses
+on correctness rather than performance.
+
+The repo also supports ablation experiments: by varying the RDNA ISA knowledge
+provided to the agent, we can measure how much that knowledge contributes to
+correct low-level GPU assembly generation.
+
 ## Evaluation Mode
 
 This benchmark uses **iterative pass@k**. This is the only evaluation mode
