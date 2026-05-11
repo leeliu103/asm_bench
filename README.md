@@ -2,6 +2,47 @@
 
 `asm_bench` runs agent benchmarks for RDNA assembly generation tasks.
 
+## Evaluation Mode
+
+This benchmark uses **iterative pass@k**. This is the only evaluation mode
+implemented in this repo.
+
+Each task is assigned to one persistent subagent. The subagent may inspect the
+task files, edit the assembly candidate, run the local harness, debug failures,
+and revise its solution. Local harness runs are development checks and do not
+count as official attempts.
+
+`k` is the maximum number of official submissions allowed for each task. An
+official attempt happens only when the subagent submits `candidate.s` and the
+master evaluates an immutable attempt snapshot with the official harness. A task
+passes if any official attempt from 1 through `k` passes.
+
+This measures whether an agent can complete a realistic assembly kernel
+engineering task through testing, debugging, repair, and iteration.
+
+There are two other possible definitions, but they are not used here:
+
+```text
+independent pass@k
+  Launch k independent subagents for each task.
+  Each subagent starts from the same prompt and submits one candidate.
+  The task passes if any independent candidate passes.
+  This is closer to traditional HumanEval-style pass@k, but less realistic for
+  assembly kernel development.
+
+blind / no-harness pass@k
+  The subagent may read the task and write a candidate, but may not run the
+  harness or local checks before submission.
+  This measures blind generation without feedback, but is very strict and often
+  dominated by small compile, ABI, or launch details.
+```
+
+Interpret `asm_bench` results as:
+
+```text
+success within k official submissions, with local debugging allowed
+```
+
 ## Run
 
 Run all tasks:
