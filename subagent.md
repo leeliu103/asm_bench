@@ -66,9 +66,53 @@ Do not change test cases, reference logic, launch parameters, or validation code
 
 The benchmark is testing direct RDNA assembly generation.
 
-Do not write the kernel in a high-level language and compile it to assembly or HSACO as the submitted solution.
+Do not write the kernel, a simplified version of the kernel, or any probe kernel
+in a high-level language and compile it to assembly, LLVM IR, disassembly, or
+HSACO.
 
-Do not use HIP, CUDA, Triton, OpenCL, C, C++, Python code generation, or any other high-level source to generate `candidate.s`.
+Do not use HIP, CUDA, Triton, OpenCL, C, C++, Python code generation, or any
+other high-level source to generate, derive, inspect, validate, or guide
+`candidate.s`.
+
+Do not create temporary high-level source files such as:
+
+```text
+*.hip
+*.cu
+*.cl
+*.c
+*.cc
+*.cpp
+*.ll
+*.mlir
+```
+
+Do not run high-level compilation, lowering, or disassembly commands for this
+task, including commands such as:
+
+```text
+clang++ -x hip
+clang -x cl
+hipcc
+nvcc
+triton
+python scripts that emit assembly or HSACO
+llvm-dis / llvm-objdump / objdump on compiler-generated high-level outputs
+```
+
+Do not compile a "probe" kernel to learn register conventions, ABI behavior,
+thread IDs, block IDs, memory instructions, metadata, or instruction selection.
+Probe kernels are high-level generated solutions for benchmark purposes even if
+they are not copied verbatim into `candidate.s`.
+
+Do not inspect compiler-generated assembly, IR, disassembly, or HSACO from a
+high-level source while working on the task. This includes outputs you generate
+yourself, files already present on disk, cached compiler artifacts, examples from
+other repositories, and online snippets. The provided task `template.s` is the
+only compiler-emitted assembly artifact you may use as reference.
+
+The only allowed compiler invocations are those performed internally by
+`./harness.py` during local testing or master evaluation.
 
 You may use the provided `template.s` and existing assembly comments as reference.
 
@@ -83,6 +127,10 @@ You may run the harness locally if available:
 ```
 
 Use the harness output to fix compile, load, launch, or correctness failures.
+
+Do not run compiler or disassembler commands outside `./harness.py` for this task.
+If the harness fails to compile `candidate.s`, use only the harness error output
+and direct assembly edits to continue.
 
 ## Submission
 
