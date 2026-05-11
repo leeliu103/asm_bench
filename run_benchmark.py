@@ -2,6 +2,7 @@
 import argparse
 import os
 import signal
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 TASKS_DIR = ROOT / "tasks"
 RUNS_DIR = ROOT / "runs"
+BUILD_DIR = ROOT / "build"
 
 
 def discover_tasks():
@@ -59,6 +61,24 @@ def make_run_dir():
     return run_dir
 
 
+def clean_generated_state(tasks):
+    for task in tasks:
+        candidate = TASKS_DIR / task / "candidate.s"
+        try:
+            candidate.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise SystemExit(f"failed to remove stale candidate {candidate}: {exc}") from exc
+
+    try:
+        shutil.rmtree(BUILD_DIR)
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise SystemExit(f"failed to remove stale build directory {BUILD_DIR}: {exc}") from exc
+
+
 def write_prompt(run_dir, tasks, k, agent):
     task_list = ", ".join(tasks)
     report_path = run_dir / "report.md"
@@ -77,10 +97,11 @@ report: {report_path}
 
 Use iterative pass@k as defined in master.md.
 
-The master/subagent workflow in master.md and subagent.md is the source of truth
-for evaluation.
+The master/subagent/output workflow in master.md, subagent.md, and output.md is
+the source of truth for evaluation.
 
-Write the final benchmark report to:
+Write benchmark outputs under the configured run_dir as described in output.md.
+Write the final report to:
 
 ```text
 {report_path}
@@ -143,6 +164,7 @@ def main():
     validate_tasks(tasks)
 
     run_dir = make_run_dir()
+    clean_generated_state(tasks)
     prompt_path, prompt = write_prompt(run_dir, tasks, args.k, args.agent)
     cmd = agent_command(args.agent, prompt)
 

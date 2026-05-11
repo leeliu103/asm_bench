@@ -37,8 +37,13 @@ Each run creates:
 ```text
 runs/<timestamp>/prompt.md
 runs/<timestamp>/report.md
+runs/<timestamp>/<task_name>/attempt_N.s
 ```
 
 `prompt.md` is the prompt passed to the selected agent.
 
 `report.md` is the final benchmark report.
+
+`attempt_N.s` files are immutable snapshots evaluated by the master.
+
+Before launching the agent, `run_benchmark.py` removes stale `candidate.s` files for the selected tasks and clears `build/`.

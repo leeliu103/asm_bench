@@ -6,7 +6,7 @@ You are the master agent for an RDNA assembly generation benchmark run.
 
 Evaluate whether subagents can generate correct RDNA assembly kernels for one or more assigned tasks.
 
-The final output is a benchmark report with per-task results and overall `pass@1` / `pass@k` success rates.
+The final output is a benchmark report with per-task results, overall `pass@1` / `pass@k` success rates, and immutable attempt snapshots.
 
 This workflow uses iterative `pass@k`: each task has one persistent subagent that may receive official failure feedback and submit revised candidates.
 
@@ -16,6 +16,7 @@ Read:
 
 ```text
 subagent.md
+output.md
 harness.py
 bench_runtime.cpp
 ```
@@ -29,7 +30,7 @@ tasks/<task_name>/template.s
 
 ## Attempt Definition
 
-One attempt is one `candidate.s` file submitted by a subagent for a specific task and evaluated by the master with the official harness.
+One attempt is one `candidate.s` file submitted by a subagent for a specific task, copied to an immutable attempt snapshot, and evaluated by the master with the official harness.
 
 These do not count as attempts:
 
@@ -61,16 +62,22 @@ The configured `k` is the maximum number of official attempts per task.
 
 ## Official Evaluation
 
-For task `<task_name>`, the expected candidate path is:
+For task `<task_name>`, the subagent submits the mutable candidate path:
 
 ```text
 tasks/<task_name>/candidate.s
 ```
 
-The official evaluation command is:
+Before official attempt `N`, copy the submitted candidate to an immutable attempt snapshot:
+
+```text
+runs/<run_id>/<task_name>/attempt_N.s
+```
+
+The official evaluation command evaluates the snapshot:
 
 ```bash
-./harness.py --task <task_name> --candidate tasks/<task_name>/candidate.s
+./harness.py --task <task_name> --candidate runs/<run_id>/<task_name>/attempt_N.s
 ```
 
 A candidate passes only if the command exits with code `0`.
@@ -94,11 +101,12 @@ candidate: tasks/<task_name>/candidate.s
 
 4. Wait for the subagent to submit `candidate.s`.
 5. Count that submission as one attempt for that task.
-6. Run the official harness for that task.
-7. Record the result.
-8. If the harness passes, stop attempts for that task.
-9. If the harness fails and attempts remain, send the official failure reason back to the same subagent and ask it to continue.
-10. If attempts are exhausted, mark the task as failed.
+6. Copy `candidate.s` to `runs/<run_id>/<task_name>/attempt_N.s`.
+7. Run the official harness on the attempt snapshot.
+8. Record the result.
+9. If the harness passes, stop attempts for that task.
+10. If the harness fails and attempts remain, send the official failure reason back to the same subagent and ask it to continue.
+11. If attempts are exhausted, mark the task as failed.
 
 Each task has independent attempt counting.
 
@@ -136,63 +144,14 @@ other task definitions
 
 Do not change test cases, reference logic, launch parameters, or validation code.
 
-Only evaluate the candidate path for that task.
+Only evaluate the immutable attempt snapshot for that task.
 
-## Result Stages
+## Output
 
-Classify each attempt by the first failing stage, or `PASS` if all checks pass:
+Follow `output.md` for the run output layout.
 
-```text
-COMPILE_FAIL       candidate did not compile to HSACO
-LOAD_FAIL          HSACO did not load or the kernel symbol was missing
-LAUNCH_FAIL        kernel launch or device sync failed
-CORRECTNESS_FAIL   kernel ran but output validation failed
-PASS               all harness checks passed
-```
+For each official attempt, create the immutable attempt snapshot before running the official harness.
 
-Use the official harness output to determine the stage.
+At the end of the run, write `runs/<run_id>/report.md`.
 
-## Final Report
-
-At the end, write a concise benchmark report.
-
-Include overall metrics:
-
-```text
-total_tasks:
-k:
-pass@1_success_rate:
-pass@k_success_rate:
-passed_tasks:
-failed_tasks:
-```
-
-Include one section per task:
-
-```text
-task:
-result:
-passed_at_attempt:
-pass@1:
-pass@k:
-final_candidate:
-summary:
-```
-
-For each task, include its attempts:
-
-```text
-attempt:
-candidate_path:
-stage:
-official_result:
-change_summary:
-```
-
-`passed_at_attempt` should be `none` if no attempt passed.
-
-`pass@1` is `true` only if attempt 1 passed.
-
-`pass@k` is `true` if any attempt up to `k` passed.
-
-`official_result` should summarize the relevant harness output, especially the first error or mismatch.
+The final `report.md` must use the immutable attempt snapshot paths, not the mutable `tasks/<task_name>/candidate.s` path.
