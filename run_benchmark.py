@@ -81,7 +81,6 @@ def clean_generated_state(tasks):
 
 def write_prompt(run_dir, tasks, k, agent):
     task_list = ", ".join(tasks)
-    report_path = run_dir / "report.md"
 
     prompt = f"""Read master.md and run the RDNA assembly generation benchmark.
 
@@ -92,7 +91,6 @@ tasks: {task_list}
 k: {k}
 agent: {agent}
 run_dir: {run_dir}
-report: {report_path}
 ```
 
 Use iterative pass@k as defined in master.md.
@@ -101,11 +99,6 @@ The master/subagent/output workflow in master.md, subagent.md, and output.md is
 the source of truth for evaluation.
 
 Write benchmark outputs under the configured run_dir as described in output.md.
-Write the final report to:
-
-```text
-{report_path}
-```
 """
     prompt_path = run_dir / "prompt.md"
     try:
