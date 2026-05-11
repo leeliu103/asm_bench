@@ -38,7 +38,7 @@ extern "C" int bench_load(const char *hsaco_path, const char *kernel_name) {
     }
 
     if (loaded) {
-        hipModuleUnload(module);
+        (void)hipModuleUnload(module);
         module = NULL;
         function = NULL;
         loaded = 0;
@@ -55,7 +55,7 @@ extern "C" int bench_load(const char *hsaco_path, const char *kernel_name) {
     if (err != hipSuccess) {
         fprintf(stderr, "bench_runtime: hipModuleGetFunction(%s) failed: %s\n",
                 kernel_name, hipGetErrorString(err));
-        hipModuleUnload(module);
+        (void)hipModuleUnload(module);
         module = NULL;
         function = NULL;
         return -1;
@@ -104,7 +104,7 @@ extern "C" int bench_sync(void) {
 }
 
 extern "C" void bench_shutdown(void) {
-    if (module) hipModuleUnload(module);
+    if (module) (void)hipModuleUnload(module);
     module = NULL;
     function = NULL;
     loaded = 0;
