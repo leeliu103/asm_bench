@@ -13,6 +13,19 @@ The repo also supports ablation experiments: by varying the RDNA ISA knowledge
 provided to the agent, we can measure how much that knowledge contributes to
 correct low-level GPU assembly generation.
 
+## Known Issues
+
+`subagent.md` forbids using high-level languages, compiler-generated assembly,
+disassembly, probe kernels, or other generated artifacts to derive a solution.
+The harness does not currently enforce these restrictions. For now, the benchmark
+relies on the agent's instruction-following ability.
+
+A passing kernel may also be architecturally naive. For example, a compute-bound
+GEMM task might use scalar instructions or dot-product instructions instead of
+RDNA matrix instructions such as WMMA. The current benchmark is
+correctness-focused, so a passing result should not be read as evidence of
+performance-aware code generation.
+
 ## Evaluation Mode
 
 This benchmark uses **iterative pass@k**. This is the only evaluation mode
