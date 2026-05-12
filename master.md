@@ -4,11 +4,13 @@ You are the master agent for an RDNA assembly generation benchmark run.
 
 ## Goal
 
-Evaluate whether subagents can generate correct RDNA assembly kernels for one or more assigned tasks.
+Evaluate whether independent subagents can generate correct RDNA assembly kernels for one or more assigned tasks.
 
-The final output is a benchmark report with per-task results, overall `pass@1` / `pass@k` success rates, and immutable attempt snapshots.
+The final output is a benchmark report with per-subagent results and overall `pass@1` / `pass@k` success rates.
 
-This workflow uses iterative `pass@k`: each task has one persistent subagent that may receive official failure feedback and submit revised candidates.
+This workflow uses independent `pass@k`: each task has `k` independent subagents. Each subagent submits exactly one candidate for official evaluation.
+
+Subagents may run the local harness before submission, but each subagent gets only one official evaluation.
 
 ## Read First
 
@@ -28,11 +30,11 @@ tasks/<task_name>/task.py
 tasks/<task_name>/template.s
 ```
 
-## Attempt Definition
+## Submission Definition
 
-One attempt is one `candidate.s` file submitted by a subagent for a specific task, copied to an immutable attempt snapshot, and evaluated by the master with the official harness.
+One submission is one `candidate.s` file produced by one subagent for one task and evaluated by the master with the official harness.
 
-These do not count as attempts:
+These do not count as official submissions:
 
 ```text
 subagent status updates
@@ -47,88 +49,84 @@ analysis without a submitted candidate
 For each task:
 
 ```text
-pass@1 = true if attempt 1 passes
-pass@k = true if any attempt from 1 through k passes
+pass@1 = true if agent_1 passes
+pass@k = true if any subagent from agent_1 through agent_k passes
 ```
 
 Across all assigned tasks:
 
 ```text
-pass@1_success_rate = tasks_that_passed_on_attempt_1 / total_tasks
-pass@k_success_rate = tasks_that_passed_within_k_attempts / total_tasks
+pass@1_success_rate = tasks_where_agent_1_passed / total_tasks
+pass@k_success_rate = tasks_where_any_subagent_passed / total_tasks
 ```
 
-The configured `k` is the maximum number of official attempts per task.
+The configured `k` is the number of independent subagents per task.
+Subagent IDs are `agent_1` through `agent_k`, ordered by numeric suffix.
 
 ## Official Evaluation
 
-For task `<task_name>`, the subagent submits the mutable candidate path:
+For task `<task_name>` and subagent `<subagent_id>`, the assigned candidate path is:
 
 ```text
-tasks/<task_name>/candidate.s
+runs/<run_id>/<task_name>/<subagent_id>/candidate.s
 ```
 
-Before official attempt `N`, copy the submitted candidate to an immutable attempt snapshot:
-
-```text
-runs/<run_id>/<task_name>/attempt_N.s
-```
-
-The official evaluation command evaluates the snapshot:
+The official evaluation command evaluates that submitted candidate:
 
 ```bash
-./harness.py --task <task_name> --candidate runs/<run_id>/<task_name>/attempt_N.s
+./harness.py --task <task_name> --candidate runs/<run_id>/<task_name>/<subagent_id>/candidate.s
 ```
 
-A candidate passes only if the command exits with code `0`.
+A candidate is `success` only if the command exits with code `0`; otherwise it is `failure`.
 
 Do not accept a subagent success claim without running the official harness yourself.
 
 ## Per-Task Loop
 
-For each assigned task, run up to `k` attempts using one persistent subagent.
+For each assigned task, run exactly `k` independent subagents.
 
 For each task:
 
-1. Create one `xhigh` reasoning subagent for that task.
-2. Instruct the subagent to follow `subagent.md`.
-3. Tell the subagent the task name and candidate path:
+1. Create `k` independent `xhigh` reasoning subagents for that task.
+2. Assign subagent IDs `agent_1` through `agent_k`.
+3. Instruct each subagent to follow `subagent.md`.
+4. Tell each subagent the run ID, task name, subagent ID, and candidate path:
 
 ```text
+run_id: <run_id>
 task: <task_name>
-candidate: tasks/<task_name>/candidate.s
+subagent_id: <subagent_id>
+candidate: runs/<run_id>/<task_name>/<subagent_id>/candidate.s
 ```
 
-4. Wait for the subagent to submit `candidate.s`.
-5. Count that submission as one attempt for that task.
-6. Copy `candidate.s` to `runs/<run_id>/<task_name>/attempt_N.s`.
-7. Run the official harness on the attempt snapshot.
-8. Record the result.
-9. If the harness passes, stop attempts for that task.
-10. If the harness fails and attempts remain, send the official failure reason back to the same subagent and ask it to continue.
-11. If attempts are exhausted, mark the task as failed.
+5. Wait for each subagent to submit its assigned `candidate.s`.
+6. Run the official harness once for each submitted candidate.
+7. Record `success` or `failure` for that task and subagent.
+8. Close the subagent after its official evaluation.
 
-Each task has independent attempt counting.
+Each subagent gets one official evaluation.
 
-Do not close, replace, or recreate the subagent for a task during the run.
+Do not ask a subagent to revise after official evaluation.
 
 ## Multiple Tasks
 
-At the start of the run, create one subagent for each assigned task, then wait for subagent responses.
+At the start of the run, create `k` subagents for each assigned task, then wait for subagent responses.
 
 Do not create extra subagents for retries, debugging, verification, or alternative solutions.
 
-Keep results separated by task.
+Keep results separated by task and subagent ID.
 
-Do not mix attempts from different tasks.
+Do not mix submissions from different tasks or subagents.
 
 ## Rules
 
-Only the master decides whether an attempt passes.
+Only the master decides whether a candidate passes.
 
-While waiting for subagent responses, do not inspect candidate files, run task commands, edit files, attempt your own solution, close subagents, or create additional subagents.
+Do not inspect a subagent's candidate, run task commands for it, edit files, or attempt your own solution before that subagent submits.
 
-The master should only act when a task subagent submits `candidate.s` or asks a blocking question.
+Do not create additional subagents beyond the configured `k` per task.
+
+The master should only act when a subagent submits `candidate.s` or asks a blocking question.
 
 Do not edit candidate `.s` files yourself during the benchmark run.
 
@@ -144,14 +142,10 @@ other task definitions
 
 Do not change test cases, reference logic, launch parameters, or validation code.
 
-Only evaluate the immutable attempt snapshot for that task.
+Only evaluate the candidate path assigned to that task and subagent.
 
 ## Output
 
 Follow `output.md` for the run output layout.
 
-For each official attempt, create the immutable attempt snapshot before running the official harness.
-
 At the end of the run, write `runs/<run_id>/report.md`.
-
-The final `report.md` must use the immutable attempt snapshot paths, not the mutable `tasks/<task_name>/candidate.s` path.

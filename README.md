@@ -28,43 +28,30 @@ performance-aware code generation.
 
 ## Evaluation Mode
 
-This benchmark uses **iterative pass@k**. This is the only evaluation mode
+This benchmark uses **independent pass@k**. This is the only evaluation mode
 implemented in this repo.
 
-Each task is assigned to one persistent subagent. The subagent may inspect the
-task files, edit the assembly candidate, run the local harness, debug failures,
-and revise its solution. Local harness runs are development checks and do not
-count as official attempts.
+For each task, the master launches `k` independent subagents. Each subagent
+starts from the same task files, writes its own isolated candidate, may run the
+local harness before submission, and submits exactly one candidate for official
+evaluation.
 
-`k` is the maximum number of official submissions allowed for each task. An
-official attempt happens only when the subagent submits `candidate.s` for master
-evaluation (the master checks an immutable snapshot of that submission). A task
-passes if any official attempt from 1 through `k` passes.
+`k` is the number of independent samples per task. `pass@1` is the result of
+`agent_1` for each task. `pass@k` is true for a task if any subagent from
+`agent_1` through `agent_k` passes the official harness.
 
-This measures whether an agent can complete a realistic assembly kernel
-engineering task through testing, debugging, repair, and iteration.
+This benchmark measures whether independent agents can produce a correct RDNA
+assembly kernel with local testing and debugging available.
 
-There are two other possible definitions, but they are not used here:
+A stricter blind mode is possible but not used here:
 
 ```text
-independent pass@k
-  Launch k independent subagents for each task.
-  Each subagent starts from the same prompt and submits one candidate.
-  The task passes if any independent candidate passes.
-  This is closer to traditional HumanEval-style pass@k, but less realistic for
-  assembly kernel development.
-
 blind / no-harness pass@k
   The subagent may read the task and write a candidate, but may not run the
   harness or local checks before submission.
-  This measures blind generation without feedback, but is very strict and often
-  dominated by small compile, ABI, or launch details.
-```
-
-Interpret `asm_bench` results as:
-
-```text
-success within k official submissions, with local debugging allowed
+  This measures blind generation without feedback, but it is very strict for
+  assembly kernels: small compile errors, ABI mistakes, or launch details can
+  dominate the result.
 ```
 
 ## Repository Layout
@@ -102,7 +89,7 @@ Use Claude:
 
 ```text
 --tasks   Comma-separated task names. If omitted, all tasks are used.
---k       Maximum official attempts per task. Required.
+--k       Number of independent subagents per task. Required.
 --agent   Agent to launch: codex or claude. Required.
 ```
 
@@ -112,11 +99,14 @@ Each run creates:
 
 ```text
 runs/<timestamp>/report.md
-runs/<timestamp>/<task_name>/attempt_N.s
+runs/<timestamp>/<task_name>/agent_1/candidate.s
 ```
+
+Subagent directories are named `agent_1` through `agent_k`.
 
 `report.md` is the final benchmark report.
 
-`attempt_N.s` files are immutable snapshots evaluated by the master.
+Each `candidate.s` file is the submitted candidate for one independent subagent.
 
-Before launching the agent, `run_benchmark.py` removes stale `candidate.s` files for the selected tasks and clears `build/`.
+Before launching the agent, `run_benchmark.py` prepares the per-subagent
+candidate directories and clears `build/`.

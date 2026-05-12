@@ -32,21 +32,24 @@ template.s   starter assembly template and ABI comments
 
 ## Candidate File
 
-Do not edit `template.s`.
-
-Create a candidate file from the template:
-
-```bash
-cp tasks/<task_name>/template.s tasks/<task_name>/candidate.s
-```
+The benchmark runner has already created your assigned candidate file from the
+task template.
 
 Only edit:
 
 ```text
-tasks/<task_name>/candidate.s
+runs/<run_id>/<task_name>/<subagent_id>/candidate.s
 ```
 
-Submit that file to the master.
+Do not edit the task template:
+
+```text
+tasks/<task_name>/template.s
+```
+
+Submit your assigned candidate file to the master.
+
+Do not inspect or modify candidates belonging to other subagents.
 
 ## Work Rules
 
@@ -72,7 +75,7 @@ HSACO.
 
 Do not use HIP, CUDA, Triton, OpenCL, C, C++, Python code generation, or any
 other high-level source to generate, derive, inspect, validate, or guide
-`candidate.s`.
+your assigned `candidate.s`.
 
 Do not create temporary high-level source files such as:
 
@@ -103,7 +106,7 @@ llvm-dis / llvm-objdump / objdump on compiler-generated high-level outputs
 Do not compile a "probe" kernel to learn register conventions, ABI behavior,
 thread IDs, block IDs, memory instructions, metadata, or instruction selection.
 Probe kernels are high-level generated solutions for benchmark purposes even if
-they are not copied verbatim into `candidate.s`.
+they are not copied verbatim into your assigned `candidate.s`.
 
 Do not inspect compiler-generated assembly, IR, disassembly, or HSACO from a
 high-level source while working on the task. This includes outputs you generate
@@ -116,25 +119,25 @@ The only allowed compiler invocations are those performed internally by
 
 You may use the provided `template.s` and existing assembly comments as reference.
 
-Only edit `candidate.s` directly as assembly.
+Only edit your assigned `candidate.s` directly as assembly.
 
 ## Local Testing
 
 You may run the harness locally if available:
 
 ```bash
-./harness.py --task <task_name> --candidate tasks/<task_name>/candidate.s
+./harness.py --task <task_name> --candidate runs/<run_id>/<task_name>/<subagent_id>/candidate.s
 ```
 
 Use the harness output to fix compile, load, launch, or correctness failures.
 
 Do not run compiler or disassembler commands outside `./harness.py` for this task.
-If the harness fails to compile `candidate.s`, use only the harness error output
-and direct assembly edits to continue.
+If the harness fails to compile your assigned `candidate.s`, use only the harness
+error output and direct assembly edits to continue.
 
 ## Submission
 
-Report back only when you are ready to submit `candidate.s` for official evaluation.
+Report back only when you are ready to submit your assigned `candidate.s` for official evaluation.
 
 Your report must include:
 
@@ -150,10 +153,10 @@ change_summary:
 
 `change_summary` should briefly describe what you implemented or changed.
 
-Do not declare final benchmark success. The master is responsible for running the official harness and deciding whether the attempt passes.
+Do not declare final benchmark success. The master is responsible for running the official harness and deciding whether the candidate passes.
 
-## Failure Feedback
+## Independent Submission
 
-If the master sends an official failure reason, continue editing the same `candidate.s` unless instructed otherwise.
+Submit only when your assigned `candidate.s` is ready for its one official evaluation.
 
-Each candidate file submitted for official master evaluation counts as one attempt.
+You get one official submission. After submitting, do not continue editing the candidate.

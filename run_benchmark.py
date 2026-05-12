@@ -61,16 +61,28 @@ def make_run_dir():
     return run_dir
 
 
-def clean_generated_state(tasks):
-    for task in tasks:
-        candidate = TASKS_DIR / task / "candidate.s"
-        try:
-            candidate.unlink()
-        except FileNotFoundError:
-            pass
-        except OSError as exc:
-            raise SystemExit(f"failed to remove stale candidate {candidate}: {exc}") from exc
+def subagent_id(index):
+    return f"agent_{index}"
 
+
+def prepare_run_layout(run_dir, tasks, k):
+    for task in tasks:
+        template = TASKS_DIR / task / "template.s"
+        if not template.exists():
+            raise SystemExit(f"missing task template: {template}")
+
+        for index in range(1, k + 1):
+            agent_dir = run_dir / task / subagent_id(index)
+            candidate = agent_dir / "candidate.s"
+
+            try:
+                agent_dir.mkdir(parents=True, exist_ok=False)
+                shutil.copyfile(template, candidate)
+            except OSError as exc:
+                raise SystemExit(f"failed to prepare candidate {candidate}: {exc}") from exc
+
+
+def clean_generated_state():
     try:
         shutil.rmtree(BUILD_DIR)
     except FileNotFoundError:
@@ -81,6 +93,7 @@ def clean_generated_state(tasks):
 
 def build_prompt(run_dir, tasks, k, agent):
     task_list = ", ".join(tasks)
+    run_id = run_dir.name
 
     prompt = f"""Read master.md and run the RDNA assembly generation benchmark.
 
@@ -90,15 +103,16 @@ Configuration:
 tasks: {task_list}
 k: {k}
 agent: {agent}
+run_id: {run_id}
 run_dir: {run_dir}
 ```
 
-Use iterative pass@k as defined in master.md.
+Use independent pass@k as defined in master.md.
 
 The master/subagent/output workflow in master.md, subagent.md, and output.md is
 the source of truth for evaluation.
 
-Write benchmark outputs under the configured run_dir as described in output.md.
+Write the benchmark report to runs/{run_id}/report.md as described in output.md.
 """
     return prompt
 
@@ -136,7 +150,7 @@ def main():
         "--tasks",
         help="Comma-separated task names. If omitted, all task folders are used.",
     )
-    parser.add_argument("--k", type=int, required=True, help="Maximum official attempts per task.")
+    parser.add_argument("--k", type=int, required=True, help="Number of independent subagents per task.")
     parser.add_argument(
         "--agent",
         choices=("codex", "claude"),
@@ -152,7 +166,8 @@ def main():
     validate_tasks(tasks)
 
     run_dir = make_run_dir()
-    clean_generated_state(tasks)
+    clean_generated_state()
+    prepare_run_layout(run_dir, tasks, args.k)
     prompt = build_prompt(run_dir, tasks, args.k, args.agent)
     cmd = agent_command(args.agent, prompt)
 
@@ -160,6 +175,7 @@ def main():
     print(f"  tasks: {', '.join(tasks)}", flush=True)
     print(f"  k: {args.k}", flush=True)
     print(f"  agent: {args.agent}", flush=True)
+    print(f"  run_id: {run_dir.name}", flush=True)
     print(f"  run_dir: {run_dir}", flush=True)
     print(flush=True)
     print(f"Launching {args.agent}...", flush=True)
