@@ -139,6 +139,16 @@ You may run the harness locally if available:
 
 Use the harness output to fix compile, load, launch, or correctness failures.
 
+The harness serializes GPU access internally with a host lock. If you see:
+
+```text
+[lock] waiting for GPU lock
+```
+
+another harness run is active. Wait for the lock instead of bypassing it. Do not
+set `ASM_BENCH_GPU_LOCK`, interrupt other harness runs, or otherwise work around
+the harness lock.
+
 Do not run compiler or disassembler commands outside `./harness.py` for this task.
 If the harness fails to compile your assigned `candidate.s`, use only the harness
 error output and direct assembly edits to continue.

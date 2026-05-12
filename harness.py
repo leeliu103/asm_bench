@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import ctypes
+import fcntl
 import importlib
 import os
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -12,6 +14,21 @@ BUILD = ROOT / "build"
 ROCM_PATH = Path(os.environ.get("ROCM_PATH", "/opt/rocm"))
 CLANG = Path(os.environ.get("CLANG", ROCM_PATH / "llvm/bin/clang"))
 HIPCC = Path(os.environ.get("HIPCC", ROCM_PATH / "llvm/bin/clang++"))
+GPU_LOCK = Path(os.environ.get("ASM_BENCH_GPU_LOCK", "/tmp/asm_bench_gpu.lock"))
+
+
+@contextmanager
+def gpu_lock():
+    GPU_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    print(f"[lock] waiting for GPU lock: {GPU_LOCK}", flush=True)
+    with GPU_LOCK.open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        print("[lock] acquired", flush=True)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            print("[lock] released", flush=True)
 
 
 def run_cmd(cmd):
@@ -126,38 +143,39 @@ def main():
     parser.add_argument("--arch", default=os.environ.get("GPU_ARCH", "gfx1201"))
     args = parser.parse_args()
 
-    task = load_task(args.task)
-    runtime_so = build_runtime()
-    try:
-        hsaco = build_candidate(args.candidate, args.arch)
-    except Exception as exc:
-        print(f"[error] {exc}")
-        print("[result] COMPILE_ERROR")
-        raise SystemExit(1)
-
-    rt = load_runtime(runtime_so)
-
-    try:
-        if rt.bench_load(str(hsaco).encode(), task.SYMBOL.encode()) != 0:
-            raise RuntimeError(f"failed to load symbol {task.SYMBOL}")
-
-        failed_cases = 0
-        for case in task.CASES:
-            try:
-                task.run_case(rt, case)
-            except AssertionError as exc:
-                failed_cases += 1
-                print(f"[case] {case} FAIL: {exc}")
-            else:
-                print(f"[case] {case} PASS")
-
-        if failed_cases:
-            print(f"[result] TEST_FAIL failed_cases={failed_cases}/{len(task.CASES)}")
+    with gpu_lock():
+        task = load_task(args.task)
+        runtime_so = build_runtime()
+        try:
+            hsaco = build_candidate(args.candidate, args.arch)
+        except Exception as exc:
+            print(f"[error] {exc}")
+            print("[result] COMPILE_ERROR")
             raise SystemExit(1)
 
-        print("[result] PASS")
-    finally:
-        rt.bench_shutdown()
+        rt = load_runtime(runtime_so)
+
+        try:
+            if rt.bench_load(str(hsaco).encode(), task.SYMBOL.encode()) != 0:
+                raise RuntimeError(f"failed to load symbol {task.SYMBOL}")
+
+            failed_cases = 0
+            for case in task.CASES:
+                try:
+                    task.run_case(rt, case)
+                except AssertionError as exc:
+                    failed_cases += 1
+                    print(f"[case] {case} FAIL: {exc}")
+                else:
+                    print(f"[case] {case} PASS")
+
+            if failed_cases:
+                print(f"[result] TEST_FAIL failed_cases={failed_cases}/{len(task.CASES)}")
+                raise SystemExit(1)
+
+            print("[result] PASS")
+        finally:
+            rt.bench_shutdown()
 
 
 if __name__ == "__main__":
