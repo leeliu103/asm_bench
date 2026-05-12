@@ -84,10 +84,16 @@ Use Claude:
 ./run_benchmark.py --tasks simple_add --k 3 --agent claude
 ```
 
-Provide additional RDNA ISA knowledge:
+Provide additional RDNA ISA knowledge, for example using
+`https://github.com/leeliu103/rdnaISA`:
 
 ```bash
-./run_benchmark.py --tasks simple_add --k 3 --agent codex --isa-dir rdna_isa
+git clone https://github.com/leeliu103/rdnaISA /app/rdnaISA
+mkdir -p /app/rdna4
+cd /app/rdnaISA
+python -m rdna_isa extract-isa --arch rdna4 --out /app/rdna4/rdna4_isa.json
+cd /app/asm_bench
+./run_benchmark.py --tasks simple_add --k 3 --agent codex --isa-dir /app/rdna4
 ```
 
 ## Options
