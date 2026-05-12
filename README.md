@@ -96,6 +96,8 @@ cd /app/asm_bench
 ./run_benchmark.py --tasks simple_add --k 3 --agent codex --isa-dir /app/rdna4
 ```
 
+For reliable benchmark runs, do not run unrelated GPU workloads on the target GPU while the benchmark is active.
+
 ## Options
 
 ```text
