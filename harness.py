@@ -19,6 +19,19 @@ def run_cmd(cmd):
     subprocess.run([str(x) for x in cmd], check=True)
 
 
+def run_cmd_capture(cmd):
+    print("+", " ".join(str(x) for x in cmd))
+    proc = subprocess.run(
+        [str(x) for x in cmd],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if proc.stdout:
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+    return proc.returncode
+
+
 def build_runtime():
     BUILD.mkdir(exist_ok=True)
     src = ROOT / "bench_runtime.cpp"
@@ -51,7 +64,7 @@ def build_candidate(candidate, arch):
     if candidate.stat().st_size == 0:
         raise RuntimeError(f"{candidate} is empty")
 
-    run_cmd([
+    rc = run_cmd_capture([
         CLANG,
         "-x",
         "assembler",
@@ -62,6 +75,8 @@ def build_candidate(candidate, arch):
         out,
         candidate,
     ])
+    if rc != 0:
+        raise RuntimeError(f"candidate compile failed with exit code {rc}")
     return out
 
 
@@ -113,16 +128,32 @@ def main():
 
     task = load_task(args.task)
     runtime_so = build_runtime()
-    hsaco = build_candidate(args.candidate, args.arch)
+    try:
+        hsaco = build_candidate(args.candidate, args.arch)
+    except Exception as exc:
+        print(f"[error] {exc}")
+        print("[result] COMPILE_ERROR")
+        raise SystemExit(1)
+
     rt = load_runtime(runtime_so)
 
     try:
         if rt.bench_load(str(hsaco).encode(), task.SYMBOL.encode()) != 0:
             raise RuntimeError(f"failed to load symbol {task.SYMBOL}")
 
+        failed_cases = 0
         for case in task.CASES:
-            print(f"[case] {case}")
-            task.run_case(rt, case)
+            try:
+                task.run_case(rt, case)
+            except AssertionError as exc:
+                failed_cases += 1
+                print(f"[case] {case} FAIL: {exc}")
+            else:
+                print(f"[case] {case} PASS")
+
+        if failed_cases:
+            print(f"[result] TEST_FAIL failed_cases={failed_cases}/{len(task.CASES)}")
+            raise SystemExit(1)
 
         print("[result] PASS")
     finally:
