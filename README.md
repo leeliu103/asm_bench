@@ -100,13 +100,16 @@ Each run creates:
 ```text
 runs/<timestamp>/report.md
 runs/<timestamp>/<task_name>/agent_1/candidate.s
+runs/<timestamp>/<task_name>/agent_2/candidate.s
+...
+runs/<timestamp>/<task_name>/agent_k/candidate.s
 ```
 
 Subagent directories are named `agent_1` through `agent_k`.
 
 `report.md` is the final benchmark report.
 
-Each `candidate.s` file is the submitted candidate for one independent subagent.
+Each `candidate.s` file is initialized from the task template and assigned to one independent subagent.
 
 Before launching the agent, `run_benchmark.py` prepares the per-subagent
 candidate directories and clears `build/`.
