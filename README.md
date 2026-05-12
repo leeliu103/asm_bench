@@ -20,11 +20,10 @@ disassembly, probe kernels, or other generated artifacts to derive a solution.
 The harness does not currently enforce these restrictions. For now, the benchmark
 relies on the agent's instruction-following ability.
 
-A passing kernel may also be architecturally naive. For example, a compute-bound
-GEMM task might use scalar instructions or dot-product instructions instead of
-RDNA matrix instructions such as WMMA. The current benchmark is
-correctness-focused, so a passing result should not be read as evidence of
-performance-aware code generation.
+`subagent.md` instructs subagents to use appropriate RDNA architectural features,
+such as WMMA for compute-bound matrix kernels, but the harness does not enforce
+this. The current benchmark is correctness-focused, so a passing result should
+not be read as evidence of performance-aware code generation.
 
 ## Evaluation Mode
 

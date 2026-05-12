@@ -65,6 +65,11 @@ other task definitions
 
 Do not change test cases, reference logic, launch parameters, or validation code.
 
+## Architecture Guidance
+
+Use appropriate RDNA architectural features for the task. For compute-bound
+matrix kernels, prefer matrix instructions such as WMMA when applicable.
+
 ## No Compiler-Generated Solutions
 
 The benchmark is testing direct RDNA assembly generation.
