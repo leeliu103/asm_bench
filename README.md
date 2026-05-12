@@ -84,6 +84,9 @@ Use Claude:
 ./run_benchmark.py --tasks simple_add --k 3 --agent claude
 ```
 
+Before launching Claude Code runs, make sure Claude Code is in auto mode so the
+benchmark can run without stopping for interactive permission prompts.
+
 Provide additional RDNA ISA knowledge, for example using
 `https://github.com/leeliu103/rdnaISA`:
 
