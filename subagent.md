@@ -30,6 +30,9 @@ task.py      correctness test, kernel symbol, launch shape, and argument packing
 template.s   starter assembly template and ABI comments
 ```
 
+If the master provides `isa_dir`, inspect the files in that directory before
+editing your candidate. Treat them as read-only RDNA ISA reference material.
+
 ## Candidate File
 
 The benchmark runner has already created your assigned candidate file from the

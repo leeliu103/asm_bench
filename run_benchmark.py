@@ -49,6 +49,18 @@ def validate_tasks(tasks):
         )
 
 
+def validate_optional_dir(value, label):
+    if not value:
+        return None
+
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = ROOT / path
+    if not path.is_dir():
+        raise SystemExit(f"{label} must be a directory: {path}")
+    return path.resolve()
+
+
 def make_run_dir():
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     run_dir = RUNS_DIR / timestamp
@@ -91,20 +103,26 @@ def clean_generated_state():
         raise SystemExit(f"failed to remove stale build directory {BUILD_DIR}: {exc}") from exc
 
 
-def build_prompt(run_dir, tasks, k, agent):
+def build_prompt(run_dir, tasks, k, agent, isa_dir=None):
     task_list = ", ".join(tasks)
     run_id = run_dir.name
+    config = [
+        f"tasks: {task_list}",
+        f"k: {k}",
+        f"agent: {agent}",
+        f"run_id: {run_id}",
+        f"run_dir: {run_dir}",
+    ]
+    if isa_dir:
+        config.append(f"isa_dir: {isa_dir}")
+    config_text = "\n".join(config)
 
     prompt = f"""Read master.md and run the RDNA assembly generation benchmark.
 
 Configuration:
 
 ```text
-tasks: {task_list}
-k: {k}
-agent: {agent}
-run_id: {run_id}
-run_dir: {run_dir}
+{config_text}
 ```
 
 Use independent pass@k as defined in master.md.
@@ -157,6 +175,10 @@ def main():
         required=True,
         help="Agent command to launch.",
     )
+    parser.add_argument(
+        "--isa-dir",
+        help="Optional directory containing additional RDNA ISA knowledge for subagents.",
+    )
     args = parser.parse_args()
 
     if args.k < 1:
@@ -164,11 +186,12 @@ def main():
 
     tasks = parse_tasks(args.tasks)
     validate_tasks(tasks)
+    isa_dir = validate_optional_dir(args.isa_dir, "--isa-dir")
 
     run_dir = make_run_dir()
     clean_generated_state()
     prepare_run_layout(run_dir, tasks, args.k)
-    prompt = build_prompt(run_dir, tasks, args.k, args.agent)
+    prompt = build_prompt(run_dir, tasks, args.k, args.agent, isa_dir)
     cmd = agent_command(args.agent, prompt)
 
     print("Benchmark run prepared:", flush=True)
@@ -177,6 +200,8 @@ def main():
     print(f"  agent: {args.agent}", flush=True)
     print(f"  run_id: {run_dir.name}", flush=True)
     print(f"  run_dir: {run_dir}", flush=True)
+    if isa_dir:
+        print(f"  isa_dir: {isa_dir}", flush=True)
     print(flush=True)
     print(f"Launching {args.agent}...", flush=True)
     return run_agent(cmd)

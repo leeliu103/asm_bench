@@ -84,12 +84,19 @@ Use Claude:
 ./run_benchmark.py --tasks simple_add --k 3 --agent claude
 ```
 
+Provide additional RDNA ISA knowledge:
+
+```bash
+./run_benchmark.py --tasks simple_add --k 3 --agent codex --isa-dir rdna_isa
+```
+
 ## Options
 
 ```text
 --tasks   Comma-separated task names. If omitted, all tasks are used.
 --k       Number of independent subagents per task. Required.
 --agent   Agent to launch: codex or claude. Required.
+--isa-dir Optional directory containing additional RDNA ISA knowledge for subagents.
 ```
 
 ## Output

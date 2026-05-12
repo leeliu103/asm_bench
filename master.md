@@ -90,14 +90,17 @@ For each task:
 1. Create `k` independent `xhigh` reasoning subagents for that task.
 2. Assign subagent IDs `agent_1` through `agent_k`.
 3. Instruct each subagent to follow `subagent.md`.
-4. Tell each subagent the run ID, task name, subagent ID, and candidate path:
+4. Tell each subagent the run ID, task name, subagent ID, candidate path, and optional ISA directory:
 
 ```text
 run_id: <run_id>
 task: <task_name>
 subagent_id: <subagent_id>
 candidate: runs/<run_id>/<task_name>/<subagent_id>/candidate.s
+isa_dir: <isa_dir, if provided>
 ```
+
+Omit `isa_dir` if it is not provided in the run configuration.
 
 5. Wait for each subagent to submit its assigned `candidate.s`.
 6. Run the official harness once for each submitted candidate.
