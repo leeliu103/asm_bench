@@ -27,8 +27,13 @@ Important files:
 
 ```text
 task.py      correctness test, kernel symbol, launch shape, and argument packing
-template.s   starter assembly template and ABI comments
+template.s   starter assembly template, ABI comments, launch shape, and entry registers
 ```
+
+Use the comments copied from `template.s` as read-only context. Do not remove,
+rewrite, or "clean up" those comments in your assigned `candidate.s`; in
+particular, preserve and use the entry-register information when writing the
+kernel body.
 
 If the master provides `isa_dir`, inspect the files in that directory before
 editing your candidate. Treat them as read-only RDNA ISA reference material.

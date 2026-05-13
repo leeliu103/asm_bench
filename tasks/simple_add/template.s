@@ -6,6 +6,15 @@
 //   uint64 c_ptr @ 16
 //   uint32 n     @ 24
 //
+// Launch / entry state for this template descriptor:
+//   grid  = (ceil_div(n, 256), 1, 1)
+//   block = (256, 1, 1)
+//
+// Initial registers:
+//   s[0:1]  = kernarg segment pointer
+//   s2      = workgroup_id_x
+//   v0[9:0] = local_x work-item id on gfx1201 packed work-item-ID targets
+//
 // Required behavior:
 //   c[i] = a[i] + b[i] for 0 <= i < n
 //
