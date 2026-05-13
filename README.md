@@ -129,4 +129,4 @@ Subagent directories are named `agent_1` through `agent_k`.
 Each `candidate.s` file is initialized from the task template and assigned to one independent subagent.
 
 Before launching the agent, `run_benchmark.py` prepares the per-subagent
-candidate directories and clears `build/`.
+candidate directories.

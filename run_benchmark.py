@@ -12,7 +12,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 TASKS_DIR = ROOT / "tasks"
 RUNS_DIR = ROOT / "runs"
-BUILD_DIR = ROOT / "build"
 
 
 def discover_tasks():
@@ -92,15 +91,6 @@ def prepare_run_layout(run_dir, tasks, k):
                 shutil.copyfile(template, candidate)
             except OSError as exc:
                 raise SystemExit(f"failed to prepare candidate {candidate}: {exc}") from exc
-
-
-def clean_generated_state():
-    try:
-        shutil.rmtree(BUILD_DIR)
-    except FileNotFoundError:
-        pass
-    except OSError as exc:
-        raise SystemExit(f"failed to remove stale build directory {BUILD_DIR}: {exc}") from exc
 
 
 def build_prompt(run_dir, tasks, k, agent, isa_dir=None):
@@ -189,7 +179,6 @@ def main():
     isa_dir = validate_optional_dir(args.isa_dir, "--isa-dir")
 
     run_dir = make_run_dir()
-    clean_generated_state()
     prepare_run_layout(run_dir, tasks, args.k)
     prompt = build_prompt(run_dir, tasks, args.k, args.agent, isa_dir)
     cmd = agent_command(args.agent, prompt)

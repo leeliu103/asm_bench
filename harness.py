@@ -10,7 +10,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-BUILD = ROOT / "build"
 ROCM_PATH = Path(os.environ.get("ROCM_PATH", "/opt/rocm"))
 CLANG = Path(os.environ.get("CLANG", ROCM_PATH / "llvm/bin/clang"))
 HIPCC = Path(os.environ.get("HIPCC", ROCM_PATH / "llvm/bin/clang++"))
@@ -49,10 +48,23 @@ def run_cmd_capture(cmd):
     return proc.returncode
 
 
-def build_runtime():
-    BUILD.mkdir(exist_ok=True)
+def resolve_candidate(candidate):
+    candidate = Path(candidate).resolve()
+    if not candidate.exists():
+        raise FileNotFoundError(f"missing candidate asm file: {candidate}")
+    if candidate.stat().st_size == 0:
+        raise RuntimeError(f"{candidate} is empty")
+    return candidate
+
+
+def candidate_build_dir(candidate):
+    return candidate.parent / "build"
+
+
+def build_runtime(build_dir):
+    build_dir.mkdir(parents=True, exist_ok=True)
     src = ROOT / "bench_runtime.cpp"
-    out = BUILD / "libbench_runtime.so"
+    out = build_dir / "libbench_runtime.so"
 
     run_cmd([
         HIPCC,
@@ -71,15 +83,9 @@ def build_runtime():
     return out
 
 
-def build_candidate(candidate, arch):
-    BUILD.mkdir(exist_ok=True)
-    candidate = Path(candidate).resolve()
-    out = BUILD / "candidate.hsaco"
-
-    if not candidate.exists():
-        raise FileNotFoundError(f"missing candidate asm file: {candidate}")
-    if candidate.stat().st_size == 0:
-        raise RuntimeError(f"{candidate} is empty")
+def build_candidate(candidate, arch, build_dir):
+    build_dir.mkdir(parents=True, exist_ok=True)
+    out = build_dir / "candidate.hsaco"
 
     rc = run_cmd_capture([
         CLANG,
@@ -145,9 +151,18 @@ def main():
 
     with gpu_lock():
         task = load_task(args.task)
-        runtime_so = build_runtime()
         try:
-            hsaco = build_candidate(args.candidate, args.arch)
+            candidate = resolve_candidate(args.candidate)
+        except Exception as exc:
+            print(f"[error] {exc}")
+            print("[result] COMPILE_ERROR")
+            raise SystemExit(1)
+
+        build_dir = candidate_build_dir(candidate)
+        runtime_so = build_runtime(build_dir)
+
+        try:
+            hsaco = build_candidate(candidate, args.arch, build_dir)
         except Exception as exc:
             print(f"[error] {exc}")
             print("[result] COMPILE_ERROR")
